@@ -30,18 +30,29 @@ const ScrollPosts: React.FC = () => {
       try {
         const res = await fetch("/api/articles");
         if (!res.ok) throw new Error("Failed to fetch articles");
-
-        const data = await res.json();
-        setArticles(data);
+  
+        const data: Article[] = await res.json();
+  
+        // Trier les articles du plus récent au plus ancien
+        const sortedArticles = data.sort((a, b) =>
+          new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
+        );
+  
+        // Exclure le plus récent (le premier après tri)
+        const articlesToDisplay = sortedArticles.slice(1);
+  
+        setArticles(articlesToDisplay);
       } catch (error) {
         console.error("Error fetching articles:", error);
       } finally {
         setLoading(false);
       }
     };
-
+  
     fetchArticles();
   }, []);
+  
+  
 
   if (loading) {
     return (

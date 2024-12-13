@@ -16,7 +16,7 @@ const SortPosts: React.FC = () => {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<number | string>("all");
-  const [categories, setCategories] = useState<string[]>(["Catégorie 1", "Catégorie 2", "Catégorie 3", "Catégorie 4"]);
+  const [categories, setCategories] = useState<string[]>(["Categorie 1", "Categorie 2", "Categorie 3", "Categorie 4"]);
 
   // Fetch articles from the API
   useEffect(() => {
@@ -58,7 +58,7 @@ const SortPosts: React.FC = () => {
           className="p-2 border rounded-md bg-white shadow-md"
         >
           {categories.map((category, index) => (
-            <option key={index} value={category === "Catégorie 1" ? "Catégorie 1" : category}>
+            <option key={index} value={category === "Categorie 1" ? "Categorie 1" : category}>
               {category}
             </option>
           ))}

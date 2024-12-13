@@ -7,7 +7,7 @@ export default function CreateArticleModal({ closeModal }: { closeModal: () => v
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [imageURL, setImageURL] = useState("");
-  const [categoryNAME, setCategoryNAME] = useState(""); // ID de catégorie par défaut
+  const [categoryNAME, setCategoryNAME] = useState(""); // ID de categorie par défaut
   const [error, setError] = useState("");
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -87,7 +87,7 @@ export default function CreateArticleModal({ closeModal }: { closeModal: () => v
           </div>
           <div className="mb-4">
             <label htmlFor="imageURL" className="block text-sm font-medium text-gray-700">
-              URL de l'image
+              URL de limage
             </label>
             <input
               id="imageURL"
@@ -99,7 +99,7 @@ export default function CreateArticleModal({ closeModal }: { closeModal: () => v
           </div>
           <div className="mb-4">
             <label htmlFor="categoryID" className="block text-sm font-medium text-gray-700">
-              Catégorie
+              Categorie
             </label>
             <select
               id="categoryNAME"
@@ -112,11 +112,11 @@ export default function CreateArticleModal({ closeModal }: { closeModal: () => v
                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               required
             >
-              <option value="Catégorie 1">Catégorie 1</option>
-<option value="Catégorie 2">Catégorie 2</option>
-<option value="Catégorie 3">Catégorie 3</option>
-<option value="Catégorie 4">Catégorie 4</option>
-<option value="Bible">Catégorie 5</option>
+              <option value="Categorie 1">Categorie 1</option>
+<option value="Categorie 2">Categorie 2</option>
+<option value="Categorie 3">Categorie 3</option>
+<option value="Categorie 4">Categorie 4</option>
+<option value="Bible">Categorie 5</option>
 
             </select>
           </div>
