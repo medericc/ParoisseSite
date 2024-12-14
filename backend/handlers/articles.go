@@ -12,7 +12,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 // Pour la gestion des JWT
 	"golang-backend/models"
-	
+	"github.com/gorilla/mux"
 	"golang-backend/config"
 	
 	
@@ -272,3 +272,42 @@ func GetArticles(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(articles)
 }
 
+func DeleteArticle(w http.ResponseWriter, r *http.Request) {
+    // Extraire l'ID de l'article depuis les paramètres de la route
+    vars := mux.Vars(r)
+    id := vars["id"]
+
+    // Vérifier si l'ID est valide
+    if id == "" {
+        log.Println("ID manquant dans la requête")
+        http.Error(w, "ID manquant dans la requête", http.StatusBadRequest)
+        return
+    }
+
+    // Supprimer l'article de la base de données
+    result, err := config.DB.Exec("DELETE FROM articles WHERE id = $1", id)
+    if err != nil {
+        log.Println("Erreur lors de la suppression de l'article :", err)
+        http.Error(w, "Erreur lors de la suppression de l'article", http.StatusInternalServerError)
+        return
+    }
+
+    // Vérifier si un article a été supprimé
+    rowsAffected, err := result.RowsAffected()
+    if err != nil {
+        log.Println("Erreur lors de la vérification de la suppression :", err)
+        http.Error(w, "Erreur lors de la suppression", http.StatusInternalServerError)
+        return
+    }
+    if rowsAffected == 0 {
+        log.Println("Aucun article trouvé avec l'ID :", id)
+        http.Error(w, "Article non trouvé", http.StatusNotFound)
+        return
+    }
+
+    // Retourner une réponse de succès
+    log.Println("Article supprimé avec succès, ID :", id)
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(map[string]string{"message": "Article supprimé avec succès"})
+}
