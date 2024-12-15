@@ -14,7 +14,7 @@ import (
 	"golang-backend/models"
 	"github.com/gorilla/mux"
 	"golang-backend/config"
-	
+	"fmt"
 	
 )
 
@@ -41,10 +41,10 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
         }
 
         // Vérifier si l'email existe dans la base de données
-        var storedPassword string
+        var storedPassword, role string
         var userID int
         var username string
-        err := config.DB.QueryRow("SELECT id, username, password FROM users WHERE email = $1", creds.Email).Scan(&userID, &username, &storedPassword)
+        err := config.DB.QueryRow("SELECT id, username, password, role FROM users WHERE email = $1", creds.Email).Scan(&userID, &username, &storedPassword, &role)
         if err != nil {
             if err == sql.ErrNoRows {
                 http.Error(w, "Email ou mot de passe incorrect", http.StatusUnauthorized)
@@ -66,11 +66,12 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
             "user_id":  userID,
             "username": username,
             "email":    creds.Email,
-            "exp":      time.Now().Add(time.Hour * 24).Unix(),  // Expiration du token dans 24 heures
+            "role":     role,
+            "exp":      time.Now().Add(time.Hour * 24).Unix(),
         })
 
         // Utilisez jwtSecret pour signer le token
-		tokenString, err := token.SignedString([]byte(config.JwtSecret)) // Utilisation de config.JwtSecret
+        tokenString, err := token.SignedString([]byte(config.JwtSecret))
         if err != nil {
             log.Println("Erreur lors de la génération du token:", err)
             http.Error(w, "Erreur lors de la génération du token", http.StatusInternalServerError)
@@ -87,12 +88,14 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
                 "id":       userID,
                 "username": username,
                 "email":    creds.Email,
+                "role":     role,
             },
         })
     } else {
         http.Error(w, "Méthode non autorisée", http.StatusMethodNotAllowed)
     }
 }
+
 func SignupHandler(w http.ResponseWriter, r *http.Request) {
     if r.Method == http.MethodPost {
         var creds struct {
@@ -277,10 +280,30 @@ func DeleteArticle(w http.ResponseWriter, r *http.Request) {
     vars := mux.Vars(r)
     id := vars["id"]
 
-    // Vérifier si l'ID est valide
     if id == "" {
         log.Println("ID manquant dans la requête")
         http.Error(w, "ID manquant dans la requête", http.StatusBadRequest)
+        return
+    }
+
+    // Extraire le token JWT de l'en-tête Authorization
+    tokenString := r.Header.Get("Authorization")
+    if tokenString == "" {
+        http.Error(w, "Token manquant", http.StatusUnauthorized)
+        return
+    }
+
+    // Valider le token JWT
+    _, claims, err := validateToken(tokenString) // Ignorer le token
+    if err != nil {
+        http.Error(w, "Token invalide", http.StatusUnauthorized)
+        return
+    }
+
+    // Vérifier si l'utilisateur est un admin
+    role, ok := claims["role"].(string)
+    if !ok || role != "admin" {
+        http.Error(w, "Accès interdit. Seuls les administrateurs peuvent supprimer des articles", http.StatusForbidden)
         return
     }
 
@@ -310,4 +333,24 @@ func DeleteArticle(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusOK)
     json.NewEncoder(w).Encode(map[string]string{"message": "Article supprimé avec succès"})
+}
+
+
+func validateToken(tokenString string) (*jwt.Token, jwt.MapClaims, error) {
+    token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+        // Vérifier la méthode de signature
+        if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+            return nil, fmt.Errorf("méthode de signature inattendue")
+        }
+        return []byte(config.JwtSecret), nil
+    })
+    if err != nil {
+        return nil, nil, err
+    }
+
+    // Extraire les informations de l'utilisateur depuis le token
+    if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+        return token, claims, nil
+    }
+    return nil, nil, fmt.Errorf("token invalide")
 }

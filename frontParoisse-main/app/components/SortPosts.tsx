@@ -31,7 +31,7 @@ const SortPosts: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentArticle, setCurrentArticle] = useState<Article | null>(null);
 
-  const { isLoggedIn } = useAuth(); // Vérifie si l'utilisateur est connecté
+  const { isLoggedIn, userRole } = useAuth(); // Vérifie si l'utilisateur est connecté
 
   // Fetch articles from the API
   useEffect(() => {
@@ -134,17 +134,18 @@ const SortPosts: React.FC = () => {
               <p className="mt-2 text-xs text-gray-500">By {article.username}</p>
 
               {/* Icône de suppression */}
-              {isLoggedIn && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(article.id);
-                  }}
-                  className="absolute bottom-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700"
-                >
-                  🗑
-                </button>
-              )}
+              {isLoggedIn && userRole === "admin" && (
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      handleDelete(article.id);
+    }}
+    className="absolute bottom-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700"
+  >
+    🗑
+  </button>
+)}
+
             </div>
           ))}
         </div>

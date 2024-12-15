@@ -21,23 +21,25 @@ export default function AuthModal({ closeModal }: { closeModal: () => void }) {
         },
         body: JSON.stringify({ email, password }),
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         setError(errorData.error || "Connexion échouée");
         return;
       }
-
+  
       const data = await response.json();
       console.log("Connexion réussie:", data);
-
-      login(data.user.username, data.token); // Appelle login du contexte
+  
+      // Ajoutez le rôle ici
+      login(data.user.username, data.token, data.user.role); 
       closeModal();
     } catch (err) {
       console.error("Erreur de connexion:", err);
       setError("Erreur interne. Réessayez plus tard.");
     }
   };
+  
 
   const handleSignup = async () => {
     try {
@@ -48,24 +50,25 @@ export default function AuthModal({ closeModal }: { closeModal: () => void }) {
         },
         body: JSON.stringify({ email, password, username }),
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         setError(errorData.error || "Inscription échouée");
         return;
       }
-
+  
       const data = await response.json();
       console.log("Inscription réussie:", data);
-
-      login(data.user.username, data.token); // Appelle login du contexte
+  
+      // Ajoutez le rôle ici
+      login(data.user.username, data.token, data.user.role);
       closeModal();
     } catch (err) {
       console.error("Erreur d'inscription:", err);
       setError("Erreur interne. Réessayez plus tard.");
     }
   };
-
+  
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-96">
