@@ -2,6 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext"; // Si vous utilisez un contexte d'authentification
+import Modal from "@mui/material/Modal";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import CircularProgress from "@mui/material/CircularProgress";
 
 interface Article {
   id: number;
@@ -24,8 +28,10 @@ const SortPosts: React.FC = () => {
     "Categorie 4",
   ]);
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentArticle, setCurrentArticle] = useState<Article | null>(null);
+
   const { isLoggedIn } = useAuth(); // Vérifie si l'utilisateur est connecté
-  // Vérifie si l'utilisateur est connecté
 
   // Fetch articles from the API
   useEffect(() => {
@@ -67,13 +73,27 @@ const SortPosts: React.FC = () => {
     }
   };
 
+  const handleOpenModal = (article: Article) => {
+    setCurrentArticle(article);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setCurrentArticle(null);
+  };
+
   const filteredArticles =
     selectedCategory === "all"
       ? articles
       : articles.filter((article) => article.category_name === selectedCategory);
 
   if (loading) {
-    return <div className="text-center">Loading articles...</div>;
+    return (
+      <div className="text-center">
+        <CircularProgress />
+      </div>
+    );
   }
 
   return (
@@ -100,7 +120,8 @@ const SortPosts: React.FC = () => {
           {filteredArticles.map((article) => (
             <div
               key={article.id}
-              className="relative w-64 min-w-[16rem] p-4 bg-white rounded-lg shadow-md hover:scale-105 transition-transform duration-300"
+              onClick={() => handleOpenModal(article)}
+              className="relative w-64 min-w-[16rem] p-4 bg-white rounded-lg shadow-md hover:scale-105 transition-transform duration-300 cursor-pointer"
             >
               <img
                 src={article.image_url}
@@ -113,9 +134,12 @@ const SortPosts: React.FC = () => {
               <p className="mt-2 text-xs text-gray-500">By {article.username}</p>
 
               {/* Icône de suppression */}
-              {isLoggedIn  && (
+              {isLoggedIn && (
                 <button
-                  onClick={() => handleDelete(article.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(article.id);
+                  }}
                   className="absolute bottom-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700"
                 >
                   🗑
@@ -125,6 +149,45 @@ const SortPosts: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Article Modal */}
+      <Modal open={isModalOpen} onClose={handleCloseModal}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "80%",
+            maxHeight: "80%",
+            overflowY: "auto",
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            borderRadius: 2,
+            p: 4,
+          }}
+        >
+          {currentArticle && (
+            <>
+              <Typography variant="h5" component="h2" gutterBottom>
+                {currentArticle.title}
+              </Typography>
+              <img
+                src={currentArticle.image_url}
+                alt={currentArticle.title}
+                style={{ width: "100%", maxHeight: "300px", objectFit: "cover", borderRadius: "8px" }}
+              />
+              <Typography variant="body1" sx={{ mt: 2 }}>
+                {currentArticle.content}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: "block" }}>
+                Published on {new Date(currentArticle.published_at).toLocaleDateString()} by{" "}
+                <strong>{currentArticle.username}</strong>
+              </Typography>
+            </>
+          )}
+        </Box>
+      </Modal>
     </div>
   );
 };
