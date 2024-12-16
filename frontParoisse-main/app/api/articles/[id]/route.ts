@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 
 export async function DELETE(req: Request, context: { params: { id: string } }) {
     try {
-        const { id } = context.params; // `params` est extrait depuis le contexte
+        // Récupération de l'ID depuis `context.params`
+        const { id } = context.params;
 
-        // Vérifiez si l'ID est fourni
+        // Vérification si l'ID est fourni
         if (!id) {
             return NextResponse.json(
                 { error: "L'ID de l'article est requis." },
@@ -12,11 +13,26 @@ export async function DELETE(req: Request, context: { params: { id: string } }) 
             );
         }
 
+        // Récupération du token d'authentification (si nécessaire)
+        const token = req.headers.get("Authorization")?.replace("Bearer ", "");
+        console.log("Token envoyé :", token);
+
+        if (!token) {
+            return NextResponse.json(
+                { error: "Token d'authentification manquant." },
+                { status: 401 }
+            );
+        }
+
         // Appeler le backend Go pour supprimer l'article
         const response = await fetch(`http://localhost:8080/api/articles/${id}`, {
             method: "DELETE",
+            headers: {
+                Authorization: token, // Passer le token dans l'en-tête
+            },
         });
 
+        // Gestion des erreurs côté backend
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({
                 error: "Erreur inconnue du backend.",
@@ -28,6 +44,7 @@ export async function DELETE(req: Request, context: { params: { id: string } }) 
             );
         }
 
+        // Retourner une réponse réussie
         return NextResponse.json(
             { message: "Article supprimé avec succès." },
             { status: 200 }
@@ -40,6 +57,7 @@ export async function DELETE(req: Request, context: { params: { id: string } }) 
         );
     }
 }
+
 
 export async function PUT(req: Request, context: { params: { id: string } }) {
     const { id } = await context.params;
