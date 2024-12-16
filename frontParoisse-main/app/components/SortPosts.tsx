@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useAuth } from "../context/AuthContext"; // Si vous utilisez un contexte d'authentification
+import { useAuth } from "../context/AuthContext";
 import Modal from "@mui/material/Modal";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -37,7 +37,6 @@ const SortPosts: React.FC = () => {
 
   const { isLoggedIn, userRole, username } = useAuth(); // Vérifie si l'utilisateur est connecté
 
-  // Fetch articles from the API
   useEffect(() => {
     const fetchArticles = async () => {
       try {
@@ -56,36 +55,23 @@ const SortPosts: React.FC = () => {
     fetchArticles();
   }, []);
 
-  // Handle category change
   const handleCategoryChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedCategory(event.target.value);
   };
 
-  // Suppression d’un article
   const handleDelete = async (id: number) => {
     const confirmed = confirm("Êtes-vous sûr de vouloir supprimer cet article ?");
     if (!confirmed) return;
-  
+
     try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("Token manquant");
-  
-      const res = await fetch(`/api/articles/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`, // Ajout de l'en-tête d'autorisation
-        },
-      });
-  
+      const res = await fetch(`/api/articles/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete article");
-  
-      // Mise à jour de la liste des articles après suppression
+
       setArticles((prevArticles) => prevArticles.filter((article) => article.id !== id));
     } catch (error) {
       console.error("Error deleting article:", error);
     }
   };
-  
 
   const handleOpenModal = (article: Article, edit = false) => {
     setCurrentArticle(article);
@@ -93,7 +79,6 @@ const SortPosts: React.FC = () => {
     setEditMode(edit);
     setIsModalOpen(true);
   };
-  
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
@@ -112,31 +97,29 @@ const SortPosts: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Token manquant");
-  
+
       const res = await fetch(`/api/articles/${editedArticle.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // Ajout de l'en-tête d'autorisation
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(editedArticle),
       });
-  
+
       if (!res.ok) throw new Error("Failed to update article");
-  
-      // Mise à jour de l'article localement
+
       setArticles((prevArticles) =>
         prevArticles.map((article) =>
           article.id === editedArticle.id ? { ...article, ...editedArticle } : article
         )
       );
-  
+
       handleCloseModal();
     } catch (error) {
       console.error("Error updating article:", error);
     }
   };
-  
 
   const filteredArticles =
     selectedCategory === "all"
@@ -153,7 +136,6 @@ const SortPosts: React.FC = () => {
 
   return (
     <div className="w-full">
-      {/* Responsive Category Dropdown */}
       <div className="mb-4 flex justify-center">
         <select
           value={selectedCategory}
@@ -169,13 +151,13 @@ const SortPosts: React.FC = () => {
         </select>
       </div>
 
-      {/* Posts */}
       <div className="w-full overflow-x-auto whitespace-nowrap scrollbar-hide">
         <div className="flex space-x-4">
           {filteredArticles.map((article) => (
             <div
               key={article.id}
-              className="relative w-64 min-w-[16rem] p-4 bg-white rounded-lg shadow-md hover:scale-105 transition-transform duration-300"
+              className="relative w-64 min-w-[16rem] p-4 bg-white rounded-lg shadow-md hover:scale-105 transition-transform duration-300 cursor-pointer"
+              onClick={() => handleOpenModal(article)}
             >
               <img
                 src={article.image_url}
@@ -187,12 +169,11 @@ const SortPosts: React.FC = () => {
               <p className="text-sm text-gray-600 truncate">{article.category_name}</p>
               <p className="mt-2 text-xs text-gray-500">By {article.username}</p>
 
-              {/* Icône de modification */}
               {(isLoggedIn && (userRole === "admin" || username === article.username)) && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleOpenModal(article, true); // Activer le mode édition
+                    handleOpenModal(article, true);
                   }}
                   className="absolute top-2 right-10 bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700"
                 >
@@ -200,7 +181,6 @@ const SortPosts: React.FC = () => {
                 </button>
               )}
 
-              {/* Icône de suppression */}
               {isLoggedIn && userRole === "admin" && (
                 <button
                   onClick={(e) => {
@@ -217,7 +197,6 @@ const SortPosts: React.FC = () => {
         </div>
       </div>
 
-      {/* Article Modal */}
       <Modal open={isModalOpen} onClose={handleCloseModal}>
         <Box
           sx={{
@@ -237,7 +216,7 @@ const SortPosts: React.FC = () => {
           {editMode && currentArticle ? (
             <>
               <Typography variant="h5" component="h2" gutterBottom>
-                Modifier larticle
+                Modifier l'article
               </Typography>
               <TextField
                 label="Titre"
@@ -287,8 +266,12 @@ const SortPosts: React.FC = () => {
                 <Typography variant="body1" sx={{ mt: 2 }}>
                   {currentArticle.content}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: "block" }}>
-                  Published on {new Date(currentArticle.published_at).toLocaleDateString()} by{" "}
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ mt: 2, display: "block" }}
+                >
+                  Published on {new Date(currentArticle.published_at).toLocaleDateString()} by {" "}
                   <strong>{currentArticle.username}</strong>
                 </Typography>
               </>
