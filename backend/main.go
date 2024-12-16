@@ -25,6 +25,7 @@ func main() {
 
 	// Appliquer le middleware JWT à CreateArticle
 	r.HandleFunc("/api/articles", handlers.CreateArticle).Methods("POST")
+	r.HandleFunc("/api/articles/{id}", handlers.UpdateArticle).Methods("PUT")
 
 	// Routes pour l'authentification
 	r.HandleFunc("/api/auth/signup", handlers.SignupHandler).Methods("POST")

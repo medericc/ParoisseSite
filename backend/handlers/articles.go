@@ -354,3 +354,100 @@ func validateToken(tokenString string) (*jwt.Token, jwt.MapClaims, error) {
     }
     return nil, nil, fmt.Errorf("token invalide")
 }
+func UpdateArticle(w http.ResponseWriter, r *http.Request) {
+    // Extraire l'ID de l'article depuis les paramètres de la route
+    vars := mux.Vars(r)
+    id := vars["id"]
+
+    if id == "" {
+        log.Println("ID manquant dans la requête")
+        http.Error(w, "ID manquant dans la requête", http.StatusBadRequest)
+        return
+    }
+
+    // Extraire le token JWT de l'en-tête Authorization
+    tokenString := r.Header.Get("Authorization")
+    if tokenString == "" {
+        http.Error(w, "Token manquant", http.StatusUnauthorized)
+        return
+    }
+
+    // Valider le token JWT
+    _, claims, err := validateToken(tokenString)
+    if err != nil {
+        http.Error(w, "Token invalide", http.StatusUnauthorized)
+        return
+    }
+
+    // Extraire les informations de l'utilisateur depuis le token
+    username, ok := claims["username"].(string)
+    if !ok {
+        http.Error(w, "Token invalide : username manquant", http.StatusUnauthorized)
+        return
+    }
+    role, ok := claims["role"].(string)
+    if !ok {
+        http.Error(w, "Token invalide : rôle manquant", http.StatusUnauthorized)
+        return
+    }
+
+    // Parse le corps de la requête pour extraire les champs à mettre à jour
+    var payload struct {
+        Title   string `json:"title"`
+        Content string `json:"content"`
+    }
+    if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+        log.Println("Erreur lors de la lecture du corps de la requête :", err)
+        http.Error(w, "Corps de la requête invalide", http.StatusBadRequest)
+        return
+    }
+
+    // Vérifier si l'article existe et récupérer l'auteur
+    var articleAuthor string
+    err = config.DB.QueryRow("SELECT username FROM articles WHERE id = $1", id).Scan(&articleAuthor)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            http.Error(w, "Article non trouvé", http.StatusNotFound)
+            return
+        }
+        log.Println("Erreur lors de la récupération de l'article :", err)
+        http.Error(w, "Erreur interne", http.StatusInternalServerError)
+        return
+    }
+
+    // Vérifier les permissions (admin ou auteur de l'article)
+    if role != "admin" && articleAuthor != username {
+        http.Error(w, "Accès interdit. Vous n'êtes pas autorisé à modifier cet article", http.StatusForbidden)
+        return
+    }
+
+    // Mettre à jour l'article dans la base de données
+    result, err := config.DB.Exec(
+        "UPDATE articles SET title = $1, content = $2 WHERE id = $3",
+        payload.Title, payload.Content, id,
+    )
+    if err != nil {
+        log.Println("Erreur lors de la mise à jour de l'article :", err)
+        http.Error(w, "Erreur lors de la mise à jour de l'article", http.StatusInternalServerError)
+        return
+    }
+
+    // Vérifier si un article a été mis à jour
+    rowsAffected, err := result.RowsAffected()
+    if err != nil {
+        log.Println("Erreur lors de la vérification de la mise à jour :", err)
+        http.Error(w, "Erreur interne", http.StatusInternalServerError)
+        return
+    }
+    if rowsAffected == 0 {
+        log.Println("Aucun article trouvé avec l'ID :", id)
+        http.Error(w, "Article non trouvé", http.StatusNotFound)
+        return
+    }
+
+    // Retourner une réponse de succès
+    log.Println("Article mis à jour avec succès, ID :", id)
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(map[string]string{"message": "Article mis à jour avec succès"})
+}
