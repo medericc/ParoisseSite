@@ -3,7 +3,7 @@ package config
 import (
 	"database/sql"
 	"log"
-
+// driver psql
 	_ "github.com/lib/pq"
 )
 

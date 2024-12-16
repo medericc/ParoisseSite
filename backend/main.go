@@ -1,19 +1,24 @@
 package main
 
 import (
+	// afficher message console
 	"fmt"
 	"log"
+	// cree serveur http
 	"net/http"
+	//fichiers de l app
 	"golang-backend/config"
 	"golang-backend/handlers"
-	
+	// bibliotheque qui cré des routes dynamiques
 	"github.com/gorilla/mux"
+	// gere la communication via api
 	"github.com/rs/cors"
 )
 
 func main() {
 	// Connexion à la base de données
 	config.ConnectDB()
+	// fermer auto apres fermeture
 	defer config.DB.Close()
 
 	// Initialiser le routeur
@@ -23,7 +28,7 @@ func main() {
 	r.HandleFunc("/api/articles", handlers.GetArticles).Methods("GET")
 	r.HandleFunc("/api/articles/{id}", handlers.DeleteArticle).Methods("DELETE")
 
-	// Appliquer le middleware JWT à CreateArticle
+	
 	r.HandleFunc("/api/articles", handlers.CreateArticle).Methods("POST")
 	r.HandleFunc("/api/articles/{id}", handlers.UpdateArticle).Methods("PUT")
 
