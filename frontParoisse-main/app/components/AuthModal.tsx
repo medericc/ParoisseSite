@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "../context/AuthContext"; // Import du contexte
+import { useAuth } from "../context/AuthContext";
 
 export default function AuthModal({ closeModal }: { closeModal: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [isSignup, setIsSignup] = useState(false); // Gestion du mode inscription
-  const [username, setUsername] = useState(""); // Nom d'utilisateur pour l'inscription
+  const [isSignup, setIsSignup] = useState(false);
+  const [username, setUsername] = useState("");
 
-  const { login } = useAuth(); // Récupère la méthode login du contexte
+  const { login } = useAuth();
 
   const handleLogin = async () => {
     try {
@@ -21,25 +21,23 @@ export default function AuthModal({ closeModal }: { closeModal: () => void }) {
         },
         body: JSON.stringify({ email, password }),
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
         setError(errorData.error || "Connexion échouée");
         return;
       }
-  
+
       const data = await response.json();
       console.log("Connexion réussie:", data);
-  
-      // Ajoutez le rôle ici
-      login(data.user.username, data.token, data.user.role); 
+
+      login(data.user.username, data.token, data.user.role);
       closeModal();
     } catch (err) {
       console.error("Erreur de connexion:", err);
       setError("Erreur interne. Réessayez plus tard.");
     }
   };
-  
 
   const handleSignup = async () => {
     try {
@@ -50,17 +48,16 @@ export default function AuthModal({ closeModal }: { closeModal: () => void }) {
         },
         body: JSON.stringify({ email, password, username }),
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
         setError(errorData.error || "Inscription échouée");
         return;
       }
-  
+
       const data = await response.json();
       console.log("Inscription réussie:", data);
-  
-      // Ajoutez le rôle ici
+
       login(data.user.username, data.token, data.user.role);
       closeModal();
     } catch (err) {
@@ -68,9 +65,16 @@ export default function AuthModal({ closeModal }: { closeModal: () => void }) {
       setError("Erreur interne. Réessayez plus tard.");
     }
   };
-  
+
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          closeModal();
+        }
+      }}
+    >
       <div className="bg-white p-6 rounded-lg shadow-lg w-96">
         {isSignup ? (
           <>
@@ -110,7 +114,7 @@ export default function AuthModal({ closeModal }: { closeModal: () => void }) {
                 onClick={handleSignup}
                 className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
               >
-                Sinscrire
+                S'inscrire
               </button>
             </div>
           </>

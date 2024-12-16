@@ -1,4 +1,5 @@
-"use client"
+"use client";
+
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
@@ -7,7 +8,7 @@ export default function CreateArticleModal({ closeModal }: { closeModal: () => v
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [imageURL, setImageURL] = useState("");
-  const [categoryNAME, setCategoryNAME] = useState(""); // ID de categorie par défaut
+  const [categoryNAME, setCategoryNAME] = useState(""); // ID de catégorie par défaut
   const [error, setError] = useState("");
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -53,9 +54,25 @@ export default function CreateArticleModal({ closeModal }: { closeModal: () => v
       setError("Erreur de réseau. Veuillez réessayer.");
     }
   };
+
+  const handleOutsideClick = (event: React.MouseEvent) => {
+    // Si le clic provient de l'arrière-plan (en dehors du contenu), on ferme la modale
+    const target = event.target as HTMLElement;
+    if (target.id === "modal-background") {
+      closeModal();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+    <div
+      id="modal-background"
+      className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
+      onClick={handleOutsideClick}
+    >
+      <div
+        className="bg-white p-6 rounded-lg shadow-lg w-96"
+        onClick={(e) => e.stopPropagation()} // Empêche la propagation du clic à l'arrière-plan
+      >
         <h2 className="text-xl font-semibold mb-4">Créer un article</h2>
         {error && <p className="text-red-500 mb-4">{error}</p>}
         <form onSubmit={handleSubmit}>
@@ -87,7 +104,7 @@ export default function CreateArticleModal({ closeModal }: { closeModal: () => v
           </div>
           <div className="mb-4">
             <label htmlFor="imageURL" className="block text-sm font-medium text-gray-700">
-              URL de limage
+              URL de l'image
             </label>
             <input
               id="imageURL"
@@ -99,7 +116,7 @@ export default function CreateArticleModal({ closeModal }: { closeModal: () => v
           </div>
           <div className="mb-4">
             <label htmlFor="categoryID" className="block text-sm font-medium text-gray-700">
-              Categorie
+              Catégorie
             </label>
             <select
               id="categoryNAME"
@@ -109,15 +126,14 @@ export default function CreateArticleModal({ closeModal }: { closeModal: () => v
                 console.log("Valeur sélectionnée :", selectedValue);
                 setCategoryNAME(selectedValue);
               }}
-               className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               required
             >
               <option value="Categorie 1">Categorie 1</option>
-<option value="Categorie 2">Categorie 2</option>
-<option value="Categorie 3">Categorie 3</option>
-<option value="Categorie 4">Categorie 4</option>
-<option value="Bible">Categorie 5</option>
-
+              <option value="Categorie 2">Categorie 2</option>
+              <option value="Categorie 3">Categorie 3</option>
+              <option value="Categorie 4">Categorie 4</option>
+              <option value="Bible">Categorie 5</option>
             </select>
           </div>
           <div className="flex justify-end">
