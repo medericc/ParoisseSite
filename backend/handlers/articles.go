@@ -378,6 +378,7 @@ func UpdateArticle(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Token invalide", http.StatusUnauthorized)
         return
     }
+    log.Println("Token reçu :", tokenString)
 
     // Extraire les informations de l'utilisateur depuis le token
     username, ok := claims["username"].(string)

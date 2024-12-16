@@ -6,6 +6,8 @@ import Modal from "@mui/material/Modal";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
 
 interface Article {
   id: number;
@@ -30,8 +32,10 @@ const SortPosts: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentArticle, setCurrentArticle] = useState<Article | null>(null);
+  const [editMode, setEditMode] = useState(false); // Pour différencier vue/édition
+  const [editedArticle, setEditedArticle] = useState<Partial<Article>>({}); // État temporaire pour l'édition
 
-  const { isLoggedIn, userRole } = useAuth(); // Vérifie si l'utilisateur est connecté
+  const { isLoggedIn, userRole, username } = useAuth(); // Vérifie si l'utilisateur est connecté
 
   // Fetch articles from the API
   useEffect(() => {
@@ -61,27 +65,78 @@ const SortPosts: React.FC = () => {
   const handleDelete = async (id: number) => {
     const confirmed = confirm("Êtes-vous sûr de vouloir supprimer cet article ?");
     if (!confirmed) return;
-
+  
     try {
-      const res = await fetch(`/api/articles/${id}`, { method: "DELETE" });
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Token manquant");
+  
+      const res = await fetch(`/api/articles/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`, // Ajout de l'en-tête d'autorisation
+        },
+      });
+  
       if (!res.ok) throw new Error("Failed to delete article");
-
+  
       // Mise à jour de la liste des articles après suppression
       setArticles((prevArticles) => prevArticles.filter((article) => article.id !== id));
     } catch (error) {
       console.error("Error deleting article:", error);
     }
   };
+  
 
-  const handleOpenModal = (article: Article) => {
+  const handleOpenModal = (article: Article, edit = false) => {
     setCurrentArticle(article);
+    setEditedArticle(article);
+    setEditMode(edit);
     setIsModalOpen(true);
   };
+  
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setCurrentArticle(null);
+    setEditMode(false);
   };
+
+  const handleEditChange = (field: keyof Article, value: string) => {
+    setEditedArticle((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleSave = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Token manquant");
+  
+      const res = await fetch(`/api/articles/${editedArticle.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // Ajout de l'en-tête d'autorisation
+        },
+        body: JSON.stringify(editedArticle),
+      });
+  
+      if (!res.ok) throw new Error("Failed to update article");
+  
+      // Mise à jour de l'article localement
+      setArticles((prevArticles) =>
+        prevArticles.map((article) =>
+          article.id === editedArticle.id ? { ...article, ...editedArticle } : article
+        )
+      );
+  
+      handleCloseModal();
+    } catch (error) {
+      console.error("Error updating article:", error);
+    }
+  };
+  
 
   const filteredArticles =
     selectedCategory === "all"
@@ -120,8 +175,7 @@ const SortPosts: React.FC = () => {
           {filteredArticles.map((article) => (
             <div
               key={article.id}
-              onClick={() => handleOpenModal(article)}
-              className="relative w-64 min-w-[16rem] p-4 bg-white rounded-lg shadow-md hover:scale-105 transition-transform duration-300 cursor-pointer"
+              className="relative w-64 min-w-[16rem] p-4 bg-white rounded-lg shadow-md hover:scale-105 transition-transform duration-300"
             >
               <img
                 src={article.image_url}
@@ -133,19 +187,31 @@ const SortPosts: React.FC = () => {
               <p className="text-sm text-gray-600 truncate">{article.category_name}</p>
               <p className="mt-2 text-xs text-gray-500">By {article.username}</p>
 
+              {/* Icône de modification */}
+              {(isLoggedIn && (userRole === "admin" || username === article.username)) && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenModal(article, true); // Activer le mode édition
+                  }}
+                  className="absolute top-2 right-10 bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700"
+                >
+                  ✏️
+                </button>
+              )}
+
               {/* Icône de suppression */}
               {isLoggedIn && userRole === "admin" && (
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      handleDelete(article.id);
-    }}
-    className="absolute bottom-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700"
-  >
-    🗑
-  </button>
-)}
-
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(article.id);
+                  }}
+                  className="absolute bottom-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700"
+                >
+                  🗑
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -168,24 +234,65 @@ const SortPosts: React.FC = () => {
             p: 4,
           }}
         >
-          {currentArticle && (
+          {editMode && currentArticle ? (
             <>
               <Typography variant="h5" component="h2" gutterBottom>
-                {currentArticle.title}
+                Modifier larticle
               </Typography>
-              <img
-                src={currentArticle.image_url}
-                alt={currentArticle.title}
-                style={{ width: "100%", maxHeight: "300px", objectFit: "cover", borderRadius: "8px" }}
+              <TextField
+                label="Titre"
+                fullWidth
+                margin="normal"
+                value={editedArticle.title}
+                onChange={(e) => handleEditChange("title", e.target.value)}
               />
-              <Typography variant="body1" sx={{ mt: 2 }}>
-                {currentArticle.content}
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: "block" }}>
-                Published on {new Date(currentArticle.published_at).toLocaleDateString()} by{" "}
-                <strong>{currentArticle.username}</strong>
-              </Typography>
+              <TextField
+                label="Contenu"
+                fullWidth
+                margin="normal"
+                multiline
+                rows={4}
+                value={editedArticle.content}
+                onChange={(e) => handleEditChange("content", e.target.value)}
+              />
+              <TextField
+                label="URL de l'image"
+                fullWidth
+                margin="normal"
+                value={editedArticle.image_url}
+                onChange={(e) => handleEditChange("image_url", e.target.value)}
+              />
+              <div className="mt-4 flex justify-end">
+                <Button variant="contained" color="primary" onClick={handleSave}>
+                  Sauvegarder
+                </Button>
+              </div>
             </>
+          ) : (
+            currentArticle && (
+              <>
+                <Typography variant="h5" component="h2" gutterBottom>
+                  {currentArticle.title}
+                </Typography>
+                <img
+                  src={currentArticle.image_url}
+                  alt={currentArticle.title}
+                  style={{
+                    width: "100%",
+                    maxHeight: "300px",
+                    objectFit: "cover",
+                    borderRadius: "8px",
+                  }}
+                />
+                <Typography variant="body1" sx={{ mt: 2 }}>
+                  {currentArticle.content}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: "block" }}>
+                  Published on {new Date(currentArticle.published_at).toLocaleDateString()} by{" "}
+                  <strong>{currentArticle.username}</strong>
+                </Typography>
+              </>
+            )
           )}
         </Box>
       </Modal>
