@@ -41,6 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
+    console.log("Logout called!");
     setIsLoggedIn(false);
     setUsername(null);
     setUserRole(null); // Réinitialisation du rôle
